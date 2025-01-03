@@ -11,6 +11,7 @@ import com.antiscam.spring.jwt.mongodb.security.services.UserDetailsImpl;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -124,10 +125,18 @@ public class AuthController {
 	}
 
 	@GetMapping("/validate")
-	public String validateToken(@RequestHeader("Authorization") String token) {
-		// Add your logic to validate the JWT token here
-		// Return the username or user ID based on the token
-		// For example, you can extract the username from the token
-		return jwtUtils.getUserNameFromJwtToken(token);
+	public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String token) {
+		if (token == null || !token.startsWith("Bearer ")) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Token is missing or invalid.");
+		}
+
+		String jwt = token.substring(7);  // Extract the token part
+		if (jwtUtils.validateJwtToken(jwt)) {
+			String username = jwtUtils.getUserNameFromJwtToken(jwt);
+			return ResponseEntity.ok("Valid token for user: " + username);
+		} else {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired token.");
+		}
 	}
+
 }
